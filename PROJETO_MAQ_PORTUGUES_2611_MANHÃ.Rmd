@@ -1,0 +1,346 @@
+---
+title: "Projeto Prático de Aprendizagem de Máquina"
+author:
+- Adriano Nascimento da Paixão, 20180015150
+- Carlos Alberto Alves de Meneses, 201800032
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, echo=FALSE, message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = F,message = F,warning = F)
+```
+
+**Efeitos do Álcool no Estudo**
+
+**1 Introdução**
+
+Todos sabemos que o consumo em excesso de bebidas alcólicas provoca reaçòes indesejáveis no nosso organismo.
+
+Alguns copos a mais e você sente dificuldade para falar com desenvoltura e de coordenação e equilíbrio, e para piorar, sua capacidade de julgamento já não é tão confiável.
+
+Segundo Galvao (2017), O excesso de álcool no cérebro leva a efeitos psíquicos como redução da concentração, da atenção, da memória recente e da capacidade de julgamento.
+
+Para Mônica (2018), o álcool é um depressor do sistema nervoso central, ou seja, uma substância que diminui a atividade do cérebro, alterando a ação de neurotransmissores, como o ácido gama-aminobutírico, o glutamato e a serotonina.
+Conforme a pessoa ingere a bebida, o organismo reage de uma determinada forma, seguindo alguns estágios.
+
+Quando a concentração de álcool no sangue é baixa (entre 0,01 e 0,12 gramas/100 mililitros), o indivíduo tende a ficar desinibido, relaxado e eufórico.
+À medida que essa quantidade aumenta, outras reações aparecem, como lentidão dos reflexos, problemas de atenção, perda de memória, alterações na capacidade de raciocínio e falta de equilíbrio.
+Em níveis muito altos (a partir de 0,40 gramas/100 mililitros), pode haver intoxicação severa e parada cardiorrespiratória, com possibilidade de sequelas neurológicas e até mesmo morte.
+
+Além desses efeitos visíveis e imediatos, o consumo exagerado de álcool, principalmente ná infância e adolescência, pode prejudicar o desenvolvimento cerebral, inibir o crescimento de novos neurônios e causar lesões permanentes, além de ser um fator de risco para a depressão ou outro transtorno mental.
+
+**2 Objetivo**
+
+O objetivo é criar um modelo preditivo para responder a seguinte pergunta: "Como séria o desempenho das notas dos alunos nas disciplinas de Português e Matemática em relação ao consumo do álcool?"
+
+**3 Método**
+
+Foram análisados bancos de dados sobre o tema proposto (*Alcohol Effects On Study*), disponíveis no site https://www.kaggle.com/datasets/whenamancodes/alcohol-effects-on-study.
+Utilizou-se o software R para leitura e análise descritiva dos dados.
+
+O que na realidade queremos saber é: " É possível usar características quantitativas para predizer as notas dos alunos na disciplina de português e matemática (G3) face ao concumo de álcool?"
+
+**4 Predição para as notas de português**
+
+**4.1 Amostra de Entrada**
+
+A tabela a seguir, nos mostra as primeiras seis linhas do banco de dados *Portuguese.csv*.
+
+```{r echo=FALSE, message=FALSE}
+library(readr)
+df_por <- read_csv("/Users/user/Documents/ESTATISTICA/APRENDIZADO_DE_ MAQUINA/PROJETO_FINAL/PROJETO_APRENDIZADO_MAQUINA/Portuguese.csv")
+attach(df_por)
+```
+
+**5 Análise Descritiva**
+
+```{r echo=FALSE}
+library(tidymodels)
+library(tidyverse)
+library(DescTools)
+library(skimr)
+library(DataExplorer)
+library(visdat)
+library(corrplot)
+library(GGally)
+set.seed(42)
+df_por
+df_por1 <- df_por[,-c(31,32)]#Excluindo as variáveis G1 e G2
+#skim(df_por)
+skim(df_por1)
+```
+
+As variáveis G1 e G2 não são siguinificativas para o modelo e por isso foram retiradas do conjunto de dados.
+Ao analisarmos o banco de dados, observamos que ele apresenta a informação que há seisentas e quarenta e nove observações e trinta e uma variáveis, sendo com a classificação numérica (*age,Medu,Fedu,traveltime,studytime,failures,famrel,freetime,goout,Dalc,Walc,health,absences,G1,G2 e G3*) e do tipo character(*school,sex,address,famsize,Pstatus,Mjob,Fjob,reason,guardian,schoolsup,famsup,paid,activities,nursery,higher,internet e romantic*).
+
+```{r echo=FALSE}
+#df_por %>% DataExplorer::plot_intro()
+df_por1 %>% DataExplorer::plot_intro()
+```
+
+O conjunto de dados é composto por 51,8% colunas discretas, 45,2% continuas, não contém dados faltantes (NAs) e 100,00% das linhas completas.
+
+```{r echo=FALSE}
+#df_por %>%
+#  inspectdf::inspect_cat() %>%
+#  inspectdf::show_plot()
+df_por1 %>%
+  inspectdf::inspect_cat() %>%
+  inspectdf::show_plot()
+```
+
+Análise:
+
+
+**5.1 Correlação**
+
+```{r echo=FALSE}
+#df_por %>% 
+#  select_if(is.numeric) %>%
+#  cor(use = "complete.obs") %>%
+#  corrplot(method = "color", type = "upper")
+df_por1 %>% 
+  select_if(is.numeric) %>%
+  cor(use = "complete.obs") %>%
+  corrplot(method = "color", type = "upper")
+```
+
+Podemos observar que as variáveis que mais possui uma correlação moderada com nossa variável alvo (G3) são: Medu, Fedu e studytime. Com uma correlação baixa temos as variáveis Failures, Dalc e Walc.
+
+```{r echo=FALSE}
+#ggpairs(df_por1)
+```
+
+**5.2 Análise**
+
+Vemos claramente que temos uma tarefa de aprendizado supervisionado, uma vez que temos exemplos *rotulados* de treinamento (cada variável vem com o resultado esperado, ou seja, as notas dos alunos).
+Além disso, também é uma tarefa típica de regressão, já que estamos buscando prever um valor, cuja a variável alvo é do tipo quantitativa.
+Mais especificamente, trata-se de um problema de *regressão multivariada*, uma vez que o sistema utilizará múltiplas característica para fazer uma previsào.
+
+**6 Regresão**
+
+**6.1 Divisão do conjunto de dados em treinamento e teste**
+
+Vamos separar a amostra em treino e teste.
+
+```{r echo=FALSE}
+set.seed(42)
+#df_split = initial_split(df_por, prop = .8, strata = G3)
+#df_trn = training(df_split)
+#df_tst = testing(df_split)
+#dim(df_trn)
+#dim(df_tst)
+df_split = initial_split(df_por1, prop = .8, strata = G3)
+df_trn = training(df_split)
+df_tst = testing(df_split)
+dim(df_trn)
+dim(df_tst)
+```
+
+Obtemos quinhentas e dezesete amostras para o nosso conjunto de treinamento e cento e trinta e duas amostras para o nosso conjunto de teste.
+
+Iremos preparar o conjunto de treinamento para um esquema de validação cruzada com 5 folds.
+A **Validação Cruzada** nos permite comparar diferentes métodos de aprendizado de máquina ou parâmetros para o método escolhido e avaliar qual funcionará melhor na prática.
+Ou seja, o que iremos fazer é, para cada método,
+
+1.  Separar os dados em conjunto de treino e conjunto de teste.
+2.  Treinar um modelo no conjunto de treino.
+3.  Avaliar no conjunto de teste
+4.  Repetir os passos 1-3 e estimar o erro.
+
+```{r echo=FALSE}
+df_vfolds = vfold_cv(df_trn, v = 5, repeats = 1, strata = G3)
+```
+
+**6.2 Pré-Processamento**
+
+Antes de criarmos um modelo de predição, é importante plotarmos as variáveis do nosso modelo antecipadamente para observarmos se há algum comportamento estranho entre elas.
+Por exemplo, podemos ter uma variável que assuma frequentemente um único valor (possui muito pouca variabilidade), o que não acrescenta informações relevantes ao modelo.
+No nosso conjunto de dados temos muitas variáveis do tipo *character* e os modelos de aprendizagem de máquina não trabalhar bem com esse tipo de dados.
+Resoveremos esse problema utilizando variáveis dummies.
+As variáveis dummies ou variáveis indicadores são formas de agregar informações qualitativas em modelos estatísticos.
+Ela atribui 1 se o elemento possui determinada característica, ou 0 caso ela não possua.
+Esse tipo de transformação é importante para modelos de regressão pois ela torna possível trabalhar com variáveis qualitativas.
+Iremos criar variáveis *dummy* para as variáveis qualitativas utilizando a função *step_dummy* do pacote *tidyverse*.
+Nosso conjunto de dados não possui dados faltantes (NA\`s), porém, aplicaremos o método *k-Nearest Neighbore (knn)* para tratar dados faltantes caso eles venham a surgir na utilização de novos dados.
+O método *k-Nearest Neighbore (knn)* consiste em procurar os k vizinhos mais próximos do elemento que possui o dado faltante de uma variável de interesse, calculando a média dos valores observados dessa variável dos k vizinhos e imputando esse valor ao elemento.
+Iremos,tambbém, normalizar as variáveis quantitativas utilizando a função *step_normalize*.
+Essas transformações serão realizadas em nosso conjunto de treinamento (*df_trn*).
+
+```{r echo=FALSE}
+df_recipe = recipe(G3 ~ ., data = df_trn)%>%
+  step_impute_knn(all_predictors()) %>%
+  step_normalize(all_numeric_predictors())%>%
+  step_dummy(all_nominal_predictors())
+```
+
+```{r echo=FALSE}
+#head(df_trn)
+```
+
+**6.3 Ajustando modelos**
+
+Nessa etapa, iremos selecionar e treinar um modelo de Aprendizado de Máquina.
+
+```{r echo=FALSE}
+lm_fit1 = linear_reg() %>%
+  set_mode("regression") %>%
+  set_engine("lm")
+
+lm_fit2 = linear_reg(penalty = tune(), mixture = tune()) %>%
+  set_mode("regression") %>%
+  set_engine("glmnet")
+
+rf_fit = rand_forest(mtry = tune(), min_n = tune(), trees = 100) %>%
+  set_mode("regression") %>%
+  set_engine("ranger")
+
+svm_fit1 = svm_linear(cost = tune(), margin = tune()) %>%
+  set_mode("regression") %>%
+  set_engine("kernlab")
+
+svm_fit2 = svm_rbf(cost = tune(), rbf_sigma = tune(), margin = tune()) %>%
+  set_mode("regression") %>%
+  set_engine("kernlab")
+
+mlp_fit = mlp(hidden_units = tune(), penalty = tune(), epochs = tune()) %>%
+  set_mode("regression") %>%
+  set_engine("nnet")
+
+xgb_fit = boost_tree(tree_depth = tune(), learn_rate = tune(),
+                     loss_reduction = tune(), min_n = tune(),
+                     sample_size = tune(), trees = tune()) %>%
+  set_mode("regression") %>%
+  set_engine("xgboost")
+```
+
+Agora, realizamos os testes dos modelos utilizando o nosso conjunto de treinamento após o seu pré-ajuste e armazenando-os na variável *wf*.
+
+```{r echo=FALSE}
+wf = workflow_set(
+  preproc = list(df_recipe),
+  models = list(linear_model = lm_fit1,
+                elasticnet = lm_fit2,
+                random_forest = rf_fit,
+                linear_svm = svm_fit1,
+                kernel_svm = svm_fit2,
+                neural_networks = mlp_fit,xg_boost = xgb_fit)) %>%
+  mutate(wflow_id = gsub("(recipe_)", "", wflow_id))
+```
+
+**6.4 Escolhendo o melhor modelo**
+
+**6.4.1 Selecionando uma Medida de Desempenho**
+
+Uma médida típica de desempenho para problemas de regressão é a *Raiz do Erro Quadrático Médio* (RMSE). Ela dá uma ideia da quantidade de erros gerados pelo sistema em nossas previsões, com um peso maior para grandes erros.
+O gráfico a seguir, nos mostra os calculos para duas diferentes medidas: "RMSE" e o "Rsquared".
+A **Raiz do Erro Quadratico Médio** (RMSE - *Root Mean Squared Erro*), como o nome já diz, não é nada mais que a raiz quadrada do erro quadrático Médio.
+$$RMSE=\sqrt{MSE}=\sqrt{\frac{\sum\limits_{i=1}^{n} \left(estimado_i-real_i \right)^{2}}{n}}\quad, i=1,2,...,n.$$
+
+Outra médida de desempenho que podemos itilizar é o  **Coeficiente de Determinação**, também chamado de $(R^2)$ (R squared), é dado pela razão entre o MSE e a variância subtraído de 1.
+$$R^2=1-\frac{MSE}{Var}=1-\frac{\sum\limits_{i=1}^{n}(real_i-estimado_i)^2}{\sum\limits_{i=1}^{n}(real_i-média)^2}\quad, i=1,2,...,n.$$
+
+
+```{r echo=FALSE}
+grid_ctrl = control_grid(
+  save_pred = TRUE,
+  parallel_over = "everything",
+  save_workflow = TRUE
+)
+```
+
+```{r echo=FALSE}
+grid_results = wf %>%
+  workflow_map(resamples = df_vfolds,grid = 5,control = grid_ctrl)
+
+autoplot(grid_results)
+```
+
+```{r echo=FALSE}
+autoplot(
+  grid_results,
+  rank_metric = "rmse",
+  metric = "rmse",
+  select_best = TRUE)
+```
+
+A análise gráfica nos informa que o melhor modelo é o *random_forest* (floresta aleatória) que apresentou uma menor medida para o *RMSE* e um maior *rsq*.
+Random forest (Floresta Aleatória) é um algoritmo de aprendizado de máquina que funciona de forma semelhante a uma árvore de decisão. A diferença é que a floresta aleatória usa várias árvores de decissão para fazer uma previsão e, portanto, diminui o *overfitting*. O processo de votação por maioria é realizado e a classe selecionada pela maioria das árvores é atribuída a um item.
+
+
+```{r echo=FALSE}
+#best_results = grid_results %>% 
+#   extract_workflow_set_result("linear_model") %>% 
+#   select_best(metric = "rmse")
+#best_results
+best_results = grid_results %>% 
+   extract_workflow_set_result("random_forest") %>% 
+   select_best(metric = "rmse")
+best_results
+```
+#ATENÇÃO conferir essa análise
+
+O teste do *best_results* informa e confirma a análise gráfica de que o melhor modelo é o *Preprocessor1_Model3*, ou seja, o *random_forest*.
+
+
+```{r echo=FALSE}
+#test_results = grid_results %>% 
+#   extract_workflow("linear_model") %>% 
+#   finalize_workflow(best_results) %>% 
+#   last_fit(split = df_split)
+
+#collect_metrics(test_results)
+test_results = grid_results %>% 
+   extract_workflow("random_forest") %>% 
+   finalize_workflow(best_results) %>% 
+   last_fit(split = df_split)
+
+collect_metrics(test_results)
+```
+
+Assim, obtemos que o melhor modelo (*random_forest*) apresentou um RMSE = 2.6251399 e um rsq = 0.2631965.
+Uma maneira de entender melhor se um determinado valor de RMSE é "bom" é normalizá-lo usando a seguinte fórmula:
+
+$RMSE normalizado = \frac{RMSE}{valor máximo - valor minimo}$
+
+Isso produz um valor entre 0 e 1, onde valores mais próximo de 0 representam modelos de melhor ajuste.
+
+```{r echo=FALSE}
+rm_se = 2.6251399
+rm_se_nor = rm_se/(max(df_por1$G3) - min(df_por1$G3))
+rm_se_nor
+```
+
+Isso nos diz que o modelo é capaz de prever as notas dos alunos com precisão.
+
+
+```{r echo=FALSE}
+test_results %>% 
+   collect_predictions() %>% 
+   ggplot(aes(x = G3, y = .pred)) + 
+   geom_abline(color = "gray50", lty = 2) + 
+   geom_point(alpha = 0.5) + 
+   coord_obs_pred() + 
+   labs(x = "observado", y = "predito")
+```
+
+
+Podemos notar que há uma relação linear positiva entre os valores observados e os valores preditos.
+
+
+
+
+
+
+
+
+
+
+
+
