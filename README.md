@@ -1,5 +1,6 @@
-# Projeto-Pr-tico-de-Aprendizagem-de-M-quina
-Efeitos do Álcool no Aprendizado 
+#Projeto  Pratico de Aprendiado de Maquina 
+
+Efeitos do Álcool no Aprendizadotico 
 
 Além desses efeitos visíveis e imediatos, o consumo exagerado de álcool, principalmente ná infância e adolescência, pode prejudicar o desenvolvimento cerebral, inibir o crescimento de novos neurônios e causar lesões permanentes, além de ser um fator de risco para a depressão ou outro transtorno mental.
 2 Objetivo
